@@ -1,0 +1,207 @@
+PSEUDOCODIGO DEL SIMULADOR DE CAJERO AUTOMATICO (ATM)
+Basado en CajeroAutomatico_Completo.cpp
+
+DATOS GLOBALES
+    N <- 4
+    cuentas <- [1001, 1002, 1003, 1004]
+    pines <- [1234, 2345, 3456, 4567]
+    saldos <- [1500.00, 2000.00, 3500.00, 800.00]
+    bloqueadas <- [FALSO, FALSO, FALSO, FALSO]
+FIN DATOS
+
+FUNCION leerEntero(mensaje): ENTERO
+    REPETIR
+        MOSTRAR mensaje
+        INTENTAR LEER valor como entero
+        SI lectura valida ENTONCES
+            RETORNAR valor
+        FIN SI
+        MOSTRAR "Entrada invalida. Ingrese un numero entero."
+        LIMPIAR error de entrada y descartar resto de linea
+    HASTA que la lectura sea valida
+FIN FUNCION
+
+FUNCION leerMonto(mensaje): REAL
+    REPETIR
+        MOSTRAR mensaje
+        INTENTAR LEER monto como real
+        SI lectura valida Y monto > 0 Y monto <= 1000000000 ENTONCES
+            RETORNAR monto
+        FIN SI
+        MOSTRAR "Monto invalido. Ingrese una cantidad positiva valida."
+        LIMPIAR error de entrada y descartar resto de linea
+    HASTA que el monto sea valido
+FIN FUNCION
+
+FUNCION buscarCuenta(numero): ENTERO
+    PARA i <- 0 HASTA N - 1 HACER
+        SI cuentas[i] = numero ENTONCES
+            RETORNAR i
+        FIN SI
+    FIN PARA
+    RETORNAR -1
+FIN FUNCION
+
+PROCEDIMIENTO mostrarMensajeBloqueo()
+    MOSTRAR "CUENTA BLOQUEADA"
+    MOSTRAR "Ha superado el numero maximo de intentos permitidos"
+    MOSTRAR "o esta cuenta ya se encuentra bloqueada."
+    MOSTRAR "Por motivos de seguridad, no puede ingresar."
+    MOSTRAR "Para recuperar el acceso, comuniquese con su banco."
+FIN PROCEDIMIENTO
+
+FUNCION iniciarSesion(): ENTERO
+    MOSTRAR "INICIO DE SESION"
+    numero <- leerEntero("Numero de cuenta: ")
+    indice <- buscarCuenta(numero)
+    SI indice = -1 ENTONCES
+        MOSTRAR "Cuenta inexistente."
+        RETORNAR -1
+    FIN SI
+    SI bloqueadas[indice] = VERDADERO ENTONCES
+        mostrarMensajeBloqueo()
+        RETORNAR -1
+    FIN SI
+    PARA intento <- 1 HASTA 3 HACER
+        pin <- leerEntero("Ingrese su PIN: ")
+        SI pin = pines[indice] ENTONCES
+            MOSTRAR "Acceso correcto. Bienvenido, cuenta ", numero
+            RETORNAR indice
+        FIN SI
+        MOSTRAR "PIN incorrecto. Intentos restantes: ", 3 - intento
+    FIN PARA
+    bloqueadas[indice] <- VERDADERO
+    mostrarMensajeBloqueo()
+    RETORNAR -1
+FIN FUNCION
+
+PROCEDIMIENTO consultarSaldo(indice)
+    MOSTRAR "Cuenta: ", cuentas[indice]
+    MOSTRAR "Saldo disponible: Q", saldos[indice]
+FIN PROCEDIMIENTO
+
+PROCEDIMIENTO depositar(indice)
+    monto <- leerMonto("Monto a depositar (Q): ")
+    saldos[indice] <- saldos[indice] + monto
+    MOSTRAR "Deposito exitoso. Nuevo saldo: Q", saldos[indice]
+FIN PROCEDIMIENTO
+
+PROCEDIMIENTO retirar(indice)
+    monto <- leerMonto("Monto a retirar (Q): ")
+    SI monto > saldos[indice] ENTONCES
+        MOSTRAR "Fondos insuficientes. Saldo: Q", saldos[indice]
+        TERMINAR PROCEDIMIENTO
+    FIN SI
+    saldos[indice] <- saldos[indice] - monto
+    MOSTRAR "Retiro exitoso. Nuevo saldo: Q", saldos[indice]
+FIN PROCEDIMIENTO
+
+PROCEDIMIENTO transferir(origen)
+    destinoNumero <- leerEntero("Numero de cuenta destino: ")
+    destino <- buscarCuenta(destinoNumero)
+    SI destino = -1 ENTONCES
+        MOSTRAR "La cuenta destino no existe."
+        TERMINAR PROCEDIMIENTO
+    FIN SI
+    SI destino = origen ENTONCES
+        MOSTRAR "No puede transferir a la misma cuenta."
+        TERMINAR PROCEDIMIENTO
+    FIN SI
+    SI bloqueadas[destino] = VERDADERO ENTONCES
+        MOSTRAR "La cuenta destino esta bloqueada."
+        TERMINAR PROCEDIMIENTO
+    FIN SI
+    monto <- leerMonto("Monto a transferir (Q): ")
+    SI monto > saldos[origen] ENTONCES
+        MOSTRAR "Fondos insuficientes para transferir."
+        TERMINAR PROCEDIMIENTO
+    FIN SI
+    saldos[origen] <- saldos[origen] - monto
+    saldos[destino] <- saldos[destino] + monto
+    MOSTRAR "Transferencia exitosa a la cuenta ", destinoNumero
+    MOSTRAR "Nuevo saldo: Q", saldos[origen]
+FIN PROCEDIMIENTO
+
+PROCEDIMIENTO cambiarPIN(indice)
+    MOSTRAR "CAMBIAR PIN"
+    pinActual <- leerEntero("Ingrese su PIN actual: ")
+    SI pinActual <> pines[indice] ENTONCES
+        MOSTRAR "PIN actual incorrecto. No se realizaron cambios."
+        TERMINAR PROCEDIMIENTO
+    FIN SI
+    nuevoPIN <- leerEntero("Ingrese su nuevo PIN de 4 digitos: ")
+    SI nuevoPIN < 1000 O nuevoPIN > 9999 ENTONCES
+        MOSTRAR "Error: El PIN debe tener exactamente 4 digitos."
+        TERMINAR PROCEDIMIENTO
+    FIN SI
+    SI nuevoPIN = pinActual ENTONCES
+        MOSTRAR "El nuevo PIN debe ser diferente al actual."
+        TERMINAR PROCEDIMIENTO
+    FIN SI
+    confirmarPIN <- leerEntero("Confirme su nuevo PIN: ")
+    SI nuevoPIN <> confirmarPIN ENTONCES
+        MOSTRAR "Los PIN no coinciden. No se realizaron cambios."
+        TERMINAR PROCEDIMIENTO
+    FIN SI
+    pines[indice] <- nuevoPIN
+    MOSTRAR "PIN cambiado exitosamente."
+FIN PROCEDIMIENTO
+
+PROCEDIMIENTO reporteAdministrativo()
+    mayor <- 0
+    total <- 0
+    PARA i <- 0 HASTA N - 1 HACER
+        total <- total + saldos[i]
+        SI saldos[i] > saldos[mayor] ENTONCES
+            mayor <- i
+        FIN SI
+    FIN PARA
+    MOSTRAR "REPORTE ADMINISTRATIVO"
+    MOSTRAR "Cuenta con mayor saldo: ", cuentas[mayor]
+    MOSTRAR "Saldo de esa cuenta: Q", saldos[mayor]
+    MOSTRAR "Saldo total del banco: Q", total
+FIN PROCEDIMIENTO
+
+PROCEDIMIENTO menu(indice)
+    REPETIR
+        MOSTRAR "CAJERO AUTOMATICO"
+        MOSTRAR "1. Consultar saldo"
+        MOSTRAR "2. Depositar dinero"
+        MOSTRAR "3. Retirar dinero"
+        MOSTRAR "4. Transferir dinero"
+        MOSTRAR "5. Reporte administrativo"
+        MOSTRAR "6. Cambiar PIN"
+        MOSTRAR "7. Cerrar sesion"
+        opcion <- leerEntero("Seleccione una opcion: ")
+        SEGUN opcion HACER
+            CASO 1: consultarSaldo(indice)
+            CASO 2: depositar(indice)
+            CASO 3: retirar(indice)
+            CASO 4: transferir(indice)
+            CASO 5: reporteAdministrativo()
+            CASO 6: cambiarPIN(indice)
+            CASO 7: MOSTRAR "Sesion cerrada."
+            OTRO CASO: MOSTRAR "Opcion invalida. Intente nuevamente."
+        FIN SEGUN
+    HASTA QUE opcion = 7
+FIN PROCEDIMIENTO
+
+ALGORITMO PRINCIPAL
+    CONFIGURAR salida monetaria con 2 decimales
+    MOSTRAR "SIMULADOR DE CAJERO AUTOMATICO - PROYECTO C++"
+    REPETIR
+        MOSTRAR "1. Iniciar sesion"
+        MOSTRAR "2. Salir del programa"
+        opcion <- leerEntero("Seleccione una opcion: ")
+        SI opcion = 1 ENTONCES
+            indice <- iniciarSesion()
+            SI indice <> -1 ENTONCES
+                menu(indice)
+            FIN SI
+        SINO SI opcion = 2 ENTONCES
+            MOSTRAR "Gracias por utilizar el simulador."
+        SINO
+            MOSTRAR "Opcion invalida."
+        FIN SI
+    HASTA QUE opcion = 2
+FIN ALGORITMO
